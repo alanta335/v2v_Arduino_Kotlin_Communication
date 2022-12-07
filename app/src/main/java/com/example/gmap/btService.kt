@@ -1,125 +1,90 @@
-package com.example.gmap
-
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
-import android.os.Handler
-import android.os.Message
+import android.renderscript.ScriptGroup
+import android.util.Log
+import com.google.common.primitives.Bytes
+import kotlinx.coroutines.*
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.*
 
-class BluetoothService(adapter: BluetoothAdapter,mHandler: Handler) {
 
-    private val bluetoothAdapter : BluetoothAdapter = adapter
-    private val handler: Handler = mHandler
-    private lateinit var  sendReceive : SendReceive
+object BluetoothService {
+    private const val TAG = "BTCOMService"
+    private val uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private lateinit var outputStream: OutputStream
+    private lateinit var inputStream: InputStream
+    private lateinit var socket: BluetoothSocket
 
 
-    @SuppressLint("MissingPermission")
-    inner class ServerClass : Thread() {
-        private var serverSocket: BluetoothServerSocket? = null
-        override fun run() {
-            var socket: BluetoothSocket? = null
-            while (socket == null) {
-                try {
-                    val message = Message.obtain()
-                    message.what = const.STATE_CONNECTING
-                    handler.sendMessage(message)
-                    socket = serverSocket!!.accept()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                    val message = Message.obtain()
-                    message.what = const.STATE_CONNECTION_FAILED
-                    handler.sendMessage(message)
-                }
-                if (socket != null) {
-                    val message = Message.obtain()
-                    message.what = const.STATE_CONNECTED
-                    handler.sendMessage(message)
-                    sendReceive = SendReceive(socket)
-                    sendReceive.start()
-                    break
-                }
+    suspend fun sendData(data: ByteArray, startBytes: ByteArray, untilBytes: ByteArray) =
+        coroutineScope {
+            withContext(Dispatchers.IO) {
+                outputStream.write(data)
+                //listenData(startBytes, untilBytes = untilBytes)
             }
         }
 
-        init {
-            try {
-                serverSocket =
-                    bluetoothAdapter.listenUsingRfcommWithServiceRecord("Bluetooth Chat App", UUID.fromString(const.UUID))
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-    }
+    public fun connected() = this::socket.isInitialized && socket.isConnected
 
-    @SuppressLint("MissingPermission")
-    inner class ClientClass(private val device: BluetoothDevice) : Thread() {
-        private var socket: BluetoothSocket? = null
-        override fun run() {
-            try {
-                socket!!.connect()
-                val message = Message.obtain()
-                message.what = const.STATE_CONNECTED
-                handler.sendMessage(message)
-                sendReceive = SendReceive(socket)
-                sendReceive.start()
-            } catch (e: IOException) {
-                e.printStackTrace()
-                val message = Message.obtain()
-                message.what = const.STATE_CONNECTION_FAILED
-                handler.sendMessage(message)
-            }
-        }
+    fun listenData(
+        startBytes: ByteArray,
+        untilBytes: ByteArray,
+        inputStream: InputStream
+    ): ByteArray {
+        var buffer = byteArrayOf()
 
-        init {
-            try {
-                socket = device.createInsecureRfcommSocketToServiceRecord(UUID.fromString(const.UUID))
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    inner class SendReceive(private val bluetoothSocket: BluetoothSocket?) : Thread() {
-        private val inputStream: InputStream?
-        private val outputStream: OutputStream?
-        override fun run() {
-            val buffer = ByteArray(1024)
-            var bytes: Int
+            var startReady = false
             while (true) {
-                try {
-                    bytes = inputStream?.read(buffer)!!
-                    handler.obtainMessage(const.STATE_MESSAGE_RECEIVED, bytes, -1, buffer).sendToTarget()
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                val bytes = inputStream.available()
+                if (bytes != 0) {
+                    var tempBuffer = ByteArray(bytes)
+                    inputStream.read(tempBuffer)
+                    val index = Bytes.indexOf(tempBuffer, startBytes)
+                    if (index != -1) {
+                        startReady = true
+                        buffer = byteArrayOf()
+                        tempBuffer = tempBuffer.sliceArray(index+1 until bytes - 1)
+                    } else if (!startReady) {
+                        continue
+                    }
+                    buffer = Bytes.concat(buffer, tempBuffer)
+                    val i = Bytes.indexOf(tempBuffer, untilBytes)
+                    if (i != -1) {
+                        buffer = Bytes.concat(
+                            buffer,
+                            tempBuffer.sliceArray(0 until i + untilBytes.size)
+                        )
+                        break
+                    } else {
+                        //buffer = Bytes.concat(buffer, tempBuffer)
+                    }
                 }
+                return buffer
             }
-        }
+        return buffer
+    }
 
-        fun write(bytes: ByteArray?) {
-            try {
-                outputStream?.write(bytes)
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
 
-        init {
-            var tempIn: InputStream? = null
-            var tempOut: OutputStream? = null
+    @SuppressLint("MissingPermission")
+    suspend fun connectDevice(device: BluetoothDevice,adapter:BluetoothAdapter) {
+        adapter.cancelDiscovery()
+        withContext(Dispatchers.IO) {
+            socket = device.createInsecureRfcommSocketToServiceRecord(uuid)
             try {
-                tempIn = bluetoothSocket!!.inputStream
-                tempOut = bluetoothSocket.outputStream
+                if (socket.isConnected) {
+                    socket.close()
+                }
+                socket.connect()
+                outputStream = socket.outputStream
+                inputStream = socket.inputStream
+                Log.d(TAG, socket.isConnected.toString())
             } catch (e: IOException) {
-                e.printStackTrace()
+                // Error
             }
-            inputStream = tempIn
-            outputStream = tempOut
         }
     }
 }

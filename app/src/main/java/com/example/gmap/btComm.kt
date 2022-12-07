@@ -1,5 +1,6 @@
 package com.example.gmap
 
+import BluetoothService
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -22,12 +23,35 @@ import java.io.OutputStream
 import java.util.*
 
 class btComm :AppCompatActivity() {
-
+        var ans : String = "b"
         val bluetoothSocket: BluetoothSocket? = null
         lateinit var btAdapter :BluetoothAdapter
         lateinit var btManager : BluetoothManager
         var isConnected = true
         lateinit var btsocket : BluetoothSocket
+    inner class ResThread(socket : BluetoothSocket) : Thread() {
+        
+        val soc = socket
+        lateinit var inputStream : InputStream
+        init{
+            inputStream = socket.inputStream
+        }
+        lateinit public var str : String
+        var buffer: ByteArray = ByteArray(100)
+        override fun run() {
+            if(inputStream!=null)
+            {
+                var bytes = inputStream.available()
+                if(bytes!=0) {
+                    var tempBuffer = ByteArray(bytes)
+                    inputStream.read(tempBuffer)
+                    str = tempBuffer.toString()
+                    ans = tempBuffer.toString()
+                    ans = str.toString()
+                }
+            }
+        }
+    }
     @SuppressLint("MissingPermission")
     inner class ConnectThread(device : BluetoothDevice) : Thread() {
         lateinit var socket : BluetoothSocket
@@ -67,8 +91,6 @@ class btComm :AppCompatActivity() {
                 Log.d("HEHEHEH", "Error")
             }
         }
-
-
     }
     private lateinit var binding: BtcomLayoutBinding
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,8 +99,6 @@ class btComm :AppCompatActivity() {
         setContentView(binding.root)
         btManager = this.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         btAdapter = btManager.adapter
-
-
         var btdev: BluetoothDevice = btAdapter.getRemoteDevice(intent.getStringExtra("DEVICE_ADDRESS").toString())
         val intent = intent
         binding.txtReceivedMessage.text = "HEHE"
@@ -97,7 +117,6 @@ class btComm :AppCompatActivity() {
                 try {
                     var outputStream: OutputStream = btsocket.outputStream
                     outputStream.write(binding.btInputText.text.toString().toByteArray())
-
                     //outputStream.write("How Much can you really seeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee".toByteArray())
                     outputStream.flush()
 
@@ -108,25 +127,29 @@ class btComm :AppCompatActivity() {
                 }
             }
         }
+
         binding.btRecieve.setOnClickListener{
-            if(btsocket!=null)
-            {
-                binding.txtStatus.text = "Receiving"
-                try {
-                    var inputStream: InputStream = btsocket.inputStream
-                    var buffer: ByteArray
-                    buffer = ByteArray(100)
-                    inputStream.read(buffer,0,30)
-                    Log.d("Buffer", String(buffer).toString())
-
-                    binding.txtReceivedMessage.text = String(buffer)
-                }
-                catch(e: java.lang.Exception)
-                {
-                    Log.d("error:::" , e.toString())
-                }
-
-            }
+            var startBytes: ByteArray = "<".toByteArray()
+            var untilBytes: ByteArray = ">".toByteArray()
+            var ser = BluetoothService
+            val buffer = ser.listenData(startBytes,untilBytes,btsocket.inputStream)
+            binding.txtReceivedMessage.text = String(buffer)
+//            if(btsocket!=null)
+//            {
+//                binding.txtStatus.text = "Receiving"
+//
+//                try {
+//                    val res
+//                            = ResThread(btsocket)
+//                    res.start()
+//
+//                    binding.txtReceivedMessage.text = ans
+//                }
+//                catch(e: java.lang.Exception)
+//                {
+//                    Log.d("error:::" , e.toString())
+//                }
+//            }
         }
     }
 }
