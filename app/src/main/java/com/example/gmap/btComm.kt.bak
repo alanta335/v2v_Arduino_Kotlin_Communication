@@ -1,0 +1,98 @@
+package com.example.gmap
+
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothSocket
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import com.example.gmap.databinding.BtActivityLayoutBinding
+import com.example.gmap.databinding.BtcomLayoutBinding
+import java.util.*
+
+class btComm :AppCompatActivity() {
+    companion object{
+        var STATE_LISTENING = 1
+        var STATE_CONNECTING = 2
+        var STATE_CONNECTED = 3
+        var STATE_CONNECTION_FAILED = 4
+        var STATE_MESSAGE_RECEIVED = 5
+        val bluetoothSocket: BluetoothSocket? = null
+        var sendReceive: BluetoothService.SendReceive? = null
+        lateinit var bluetoothAdapter :BluetoothAdapter
+        lateinit var bluetoothManager : BluetoothManager
+
+        var isConnected = true
+    }
+    private lateinit var binding: BtcomLayoutBinding
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = BtcomLayoutBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        bluetoothAdapter = btActivity.bluetoothAdapter
+        val intent = intent
+        binding.txtReceivedMessage.text = "HEHE"
+        val btAddress = intent.getStringExtra("DEVICE_ADDRESS").toString()
+        var dev = intent.getStringExtra("DEVICE_NAME").toString()
+        dev +="  "
+        dev += intent.getStringExtra("DEVICE_ADDRESS").toString()
+        binding.btNameTextView.text = dev
+        binding.txtStatus.text= "Connecting"
+        val serverClass = BluetoothService(adapter = bluetoothAdapter, mHandler = mHandler).ServerClass()
+        serverClass.start()
+        val clientClass = BluetoothService(adapter = bluetoothAdapter, mHandler = mHandler).ClientClass(
+            bluetoothAdapter.getRemoteDevice(btAddress))
+        binding.txtStatus.text = "Connecting"
+        clientClass.start()
+        binding.btSendBtn.setOnClickListener {
+            val string: String = java.lang.String.valueOf(binding.btInputText.text)
+            Log.d("SENDING",string)
+            sendReceive?.write(string.toByteArray())
+        }
+        //binding.indeterminateBar.isVisible = true
+    }
+    private val mHandler: Handler = object : Handler(Looper.getMainLooper()) {
+        override fun handleMessage(message: Message) {
+            when (message.what) {
+                const.STATE_LISTENING -> binding.txtStatus.text = "Listening"
+                const.STATE_CONNECTING -> binding.txtStatus.text = "Connecting"
+                const.STATE_CONNECTED -> binding.txtStatus.text = "Connected"
+                const.STATE_CONNECTION_FAILED -> binding.txtStatus.text = "Connection Failed"
+                const.STATE_MESSAGE_RECEIVED -> {
+                    val readBuff = message.obj as ByteArray
+                    val tempMsg = String(readBuff, 0, message.arg1)
+                    binding.txtReceivedMessage.text = tempMsg
+                }
+            }
+        }
+    }
+    private var receiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val action = intent?.action
+            if (action == BluetoothAdapter.ACTION_STATE_CHANGED) {
+                when (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)) {
+                    BluetoothAdapter.STATE_OFF -> {
+                        Log.d("bluetooth chat app", "Bluetooth off")
+                    }
+                    BluetoothAdapter.STATE_TURNING_OFF -> {
+                        Log.d("bluetooth chat app", "Bluetooth turning off")
+                    }
+                    BluetoothAdapter.STATE_ON -> {
+                        Log.d("bluetooth chat app", "Bluetooth On")
+                    }
+                    BluetoothAdapter.STATE_TURNING_ON -> {
+                        Log.d("bluetooth chat app", "Bluetooth turning on")
+                    }
+                }
+            }
+        }
+    }
+}

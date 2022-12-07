@@ -1,4 +1,9 @@
 <resources>
     <string name="app_name">gmap</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_bt">btActivity</string>
+    <string name="title_bt_refresh">Refresh</string>
+    <string name="btConnect">Send to device</string>
+    <string name="btRecieve">Receive</string>
+    <string name="btDisconnect">Disconnect from device</string>
 </resources>
