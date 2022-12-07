@@ -47,6 +47,10 @@ class MainActivity : AppCompatActivity() {
         val mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
         val account = GoogleSignIn.getLastSignedInAccount(this)
         val signinButton = findViewById<Button>(R.id.google_sign_in)
+        val btButton = findViewById<Button>(R.id.main_bluetooth_dev).setOnClickListener(){
+            val intent = Intent(this,btActivity::class.java)
+            startActivity(intent)
+        }
         signin(signinButton,mGoogleSignInClient)
         val gObserver = Observer<GoogleSignInAccount> { account ->
             // Update the UI, in this case, a TextView.
@@ -64,6 +68,7 @@ class MainActivity : AppCompatActivity() {
 
 
     }
+
     fun signin(signinButton : Button,client:GoogleSignInClient){
         signinButton.text = "Signin"
         signinButton.setOnClickListener {
