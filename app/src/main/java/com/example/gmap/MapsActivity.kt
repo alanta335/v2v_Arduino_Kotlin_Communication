@@ -1,11 +1,18 @@
 package com.example.gmap
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.Volley
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -17,6 +24,8 @@ import com.example.gmap.databinding.ActivityMapsBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.Marker
+import org.json.JSONObject
+
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener {
@@ -48,26 +57,37 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
      */
 
     override fun onMapReady(googleMap: GoogleMap) {
+
         mMap = googleMap
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.setOnMarkerClickListener(this)
         setUpMap()
     }
 
+
+    @SuppressLint("MissingPermission")
     private fun setUpMap() {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),LOCATION_REQUEST_CODE)
-            return
-        }
+
         mMap.isMyLocationEnabled = true
         fusedLocationClient.lastLocation.addOnSuccessListener(this){location ->
             if(location != null){
                 lastLocation = location
                 var currentLatLong = LatLng(location.latitude,location.longitude)
+
+                val obj = JSONObject()
+                obj.put("name","alan")
+                val url = "https://3227-111-92-76-63.in.ngrok.io/addLocation"
+                val queue = Volley.newRequestQueue(this)
+                val jsonObjectRequest = JsonObjectRequest(
+                    Request.Method.POST, url, obj,
+                    Response.Listener { response ->
+                        Log.d("response",response.toString())
+                    },
+                    Response.ErrorListener { error ->
+                        Log.d("error",error.localizedMessage)
+                    }
+                )
+                queue.add(jsonObjectRequest)
                 placeMarkerOnMap(currentLatLong)
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 12f))
 
@@ -77,8 +97,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun placeMarkerOnMap(currentLatLong: LatLng) {
-    val markerOptions = MarkerOptions().position(currentLatLong)
-
+    val markerOptions = MarkerOptions().position(currentLatLong);
         markerOptions.title("$currentLatLong")
 
         mMap.addMarker(markerOptions)

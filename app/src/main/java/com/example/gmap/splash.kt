@@ -1,14 +1,17 @@
 package com.example.gmap
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
+import androidx.core.app.ActivityCompat
 
 class splashscreen : AppCompatActivity() {
 
-    private val SPLASH_TIME :  Long = 3000
+    private val SPLASH_TIME :  Long = 5000
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splashscreen)
@@ -23,6 +26,16 @@ class splashscreen : AppCompatActivity() {
             startActivity(Intent (this,MainActivity::class.java))
             finish()
         },SPLASH_TIME)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(this,arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                1
+            )
+            return
+        }
     }
 
 }
