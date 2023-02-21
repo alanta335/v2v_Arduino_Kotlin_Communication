@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import com.android.volley.Request
 import com.android.volley.Response
@@ -24,6 +25,10 @@ import com.example.gmap.databinding.ActivityMapsBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.Marker
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 
@@ -34,11 +39,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var marker: Marker
+
 
     companion object {
         private const val LOCATION_REQUEST_CODE = 1
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -62,6 +68,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.setOnMarkerClickListener(this)
         setUpMap()
+
+        updateDataL()
+        //Log.d("hi","comp")
+
     }
 
 
@@ -73,34 +83,84 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             if(location != null){
                 lastLocation = location
                 var currentLatLong = LatLng(location.latitude,location.longitude)
-
+                var ud = intent.getStringExtra("accountid").toString();
                 val obj = JSONObject()
-                obj.put("name","alan")
-                val url = "https://3227-111-92-76-63.in.ngrok.io/addLocation"
+                obj.put("location",currentLatLong.toString())
+                obj.put("accident",false)
+                obj.put("block",false)
+                obj.put("id",ud)
+
+                val url = "https://4d0c-111-92-117-51.in.ngrok.io/addfirstdata"
                 val queue = Volley.newRequestQueue(this)
                 val jsonObjectRequest = JsonObjectRequest(
                     Request.Method.POST, url, obj,
                     Response.Listener { response ->
-                        Log.d("response",response.toString())
+                        Log.d("response",response.toString());
                     },
                     Response.ErrorListener { error ->
                         Log.d("error",error.localizedMessage)
                     }
                 )
                 queue.add(jsonObjectRequest)
+
                 placeMarkerOnMap(currentLatLong)
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 12f))
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 22f))
+
+
 
             }
         }
 
     }
+    @SuppressLint("MissingPermission")
+    private fun updateDataL(){
 
+            fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
+                if (location != null) {
+                    lastLocation = location
+                    val url = "https://4d0c-111-92-117-51.in.ngrok.io/updatedataL"
+                    val queue = Volley.newRequestQueue(this)
+                    var currentLatLong = LatLng(location.latitude, location.longitude)
+
+                    CoroutineScope(Dispatchers.Main).launch {
+
+                    while (true) {
+                        currentLatLong = LatLng(location.latitude, location.longitude)
+                        var ud = intent.getStringExtra("accountid").toString();
+                        val obj = JSONObject()
+                        obj.put("location", currentLatLong.toString())
+                        obj.put("id", ud)
+
+
+                        val jsonObjectRequest = JsonObjectRequest(
+                            Request.Method.POST, url, obj,
+                            Response.Listener { response ->
+                                Log.d("response updated from coro", response.toString());
+                            },
+                            Response.ErrorListener { error ->
+                                Log.d("error coro", error.localizedMessage)
+                            }
+                        )
+                        queue.add(jsonObjectRequest)
+                        //marker.remove()
+                        mMap.clear()
+
+                        delay(5000)
+
+                        placeMarkerOnMap(currentLatLong)
+                        delay(3000)
+
+                    }
+
+                    }
+                }
+            }
+    }
     private fun placeMarkerOnMap(currentLatLong: LatLng) {
-    val markerOptions = MarkerOptions().position(currentLatLong);
+        val markerOptions = MarkerOptions().position(currentLatLong);
         markerOptions.title("$currentLatLong")
 
-        mMap.addMarker(markerOptions)
+        marker = mMap.addMarker(markerOptions)!!
     }
     override fun onMarkerClick(p0: Marker) = false
 }

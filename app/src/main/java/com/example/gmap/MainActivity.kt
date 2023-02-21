@@ -20,7 +20,7 @@ import com.google.android.gms.tasks.Task
 
 
 class MainActivity : AppCompatActivity() {
-    private val model: GViewModel by viewModels()
+    val model: GViewModel by viewModels()
     val getResult =
         registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()) {
@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
         model.account.value = account
     if(account != null) {
         val intent = Intent(this,MapsActivity::class.java)
+        intent.putExtra("accountid",model.account.value?.id)
         startActivity(intent)
     }
     }
