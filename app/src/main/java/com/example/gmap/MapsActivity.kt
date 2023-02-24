@@ -1,30 +1,26 @@
 package com.example.gmap
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.location.Location
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
-import androidx.activity.viewModels
-import androidx.core.app.ActivityCompat
+import androidx.appcompat.app.AppCompatActivity
 import com.android.volley.Request
+import com.android.volley.RequestQueue
 import com.android.volley.Response
+import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
-
+import com.example.gmap.databinding.ActivityMapsBinding
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
-import com.example.gmap.databinding.ActivityMapsBinding
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -34,16 +30,19 @@ import org.json.JSONObject
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener {
+    var markersArray: ArrayList<MarkerOptions> = ArrayList<MarkerOptions>()
 
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var marker: Marker
+    private lateinit var queue : RequestQueue
 
 
     companion object {
         private const val LOCATION_REQUEST_CODE = 1
+
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,7 +76,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     @SuppressLint("MissingPermission")
     private fun setUpMap() {
-
+        queue = Volley.newRequestQueue(this)
         mMap.isMyLocationEnabled = true
         fusedLocationClient.lastLocation.addOnSuccessListener(this){location ->
             if(location != null){
@@ -85,13 +84,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 var currentLatLong = LatLng(location.latitude,location.longitude)
                 var ud = intent.getStringExtra("accountid").toString();
                 val obj = JSONObject()
-                obj.put("location",currentLatLong.toString())
+                obj.put("latitude",location.latitude)
+                obj.put("longitude",location.longitude)
+
                 obj.put("accident",false)
                 obj.put("block",false)
                 obj.put("id",ud)
-
-                val url = "https://4d0c-111-92-117-51.in.ngrok.io/addfirstdata"
-                val queue = Volley.newRequestQueue(this)
+                val url = "https://e4f8-117-247-182-21.in.ngrok.io/addfirstdata"
                 val jsonObjectRequest = JsonObjectRequest(
                     Request.Method.POST, url, obj,
                     Response.Listener { response ->
@@ -108,6 +107,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
 
 
+
             }
         }
 
@@ -118,8 +118,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-                    val url = "https://4d0c-111-92-117-51.in.ngrok.io/updatedataL"
-                    val queue = Volley.newRequestQueue(this)
+                    val url = "https://e4f8-117-247-182-21.in.ngrok.io/updatedataL"
                     var currentLatLong = LatLng(location.latitude, location.longitude)
 
                     CoroutineScope(Dispatchers.Main).launch {
@@ -128,9 +127,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                         currentLatLong = LatLng(location.latitude, location.longitude)
                         var ud = intent.getStringExtra("accountid").toString();
                         val obj = JSONObject()
-                        obj.put("location", currentLatLong.toString())
+                        obj.put("latitude",location.latitude)
+                        obj.put("longitude",location.longitude)
                         obj.put("id", ud)
-
 
                         val jsonObjectRequest = JsonObjectRequest(
                             Request.Method.POST, url, obj,
@@ -145,9 +144,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                         //marker.remove()
                         mMap.clear()
 
-                        delay(5000)
+                        //delay(5000)
 
-                        placeMarkerOnMap(currentLatLong)
+                        updateOtherVehicleLocation()
                         delay(3000)
 
                     }
@@ -159,8 +158,31 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private fun placeMarkerOnMap(currentLatLong: LatLng) {
         val markerOptions = MarkerOptions().position(currentLatLong);
         markerOptions.title("$currentLatLong")
+        markersArray.add(markerOptions)
+        markersArray.forEach{
+            mMap.addMarker(it)!!
 
-        marker = mMap.addMarker(markerOptions)!!
+        }
+    }
+    private fun updateOtherVehicleLocation() {
+        val url = "https://e4f8-117-247-182-21.in.ngrok.io/read"
+        val jsonArrayRequest = JsonArrayRequest(
+            Request.Method.GET, url, null,
+            Response.Listener { response ->
+                Log.d("read all data", response.toString());
+                (0 until response.length()).forEach {
+                    val res = response.getJSONObject(it)
+                    val lat = res.get("latitude")
+                    val long = res.get("longitude")
+                    placeMarkerOnMap(LatLng(lat as Double, long as Double))
+                  Log.d("LOCCATIONNNNNs", res.get("latitude").toString())
+                }
+            },
+            Response.ErrorListener { error ->
+                Log.d("error read all data", error.localizedMessage)
+            }
+        )
+        queue.add(jsonArrayRequest)
     }
     override fun onMarkerClick(p0: Marker) = false
 }
