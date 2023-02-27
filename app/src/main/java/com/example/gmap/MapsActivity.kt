@@ -70,7 +70,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         setUpMap()
 
         updateDataL()
-        //Log.d("hi","comp")
+
 
     }
 
@@ -105,9 +105,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
                 placeMarkerOnMap(currentLatLong)
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 22f))
-
-
-
 
             }
         }
@@ -157,8 +154,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun placeMarkerOnMap(currentLatLong: LatLng) {
-
-
         val markerOptions = MarkerOptions().position(currentLatLong);
         markerOptions.title("$currentLatLong")
         mMap.addMarker(markerOptions)
