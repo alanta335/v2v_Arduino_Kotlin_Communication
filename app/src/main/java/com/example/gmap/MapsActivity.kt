@@ -25,13 +25,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONArray
 import org.json.JSONObject
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener {
-    var markersArray: ArrayList<MarkerOptions> = ArrayList<MarkerOptions>()
-
+   // var markersArray: ArrayList<MarkerOptions> = ArrayList()
+  //  var locationArray : ArrayList<LatLng> =  ArrayList()
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
@@ -90,7 +91,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 obj.put("accident",false)
                 obj.put("block",false)
                 obj.put("id",ud)
-                val url = "https://e4f8-117-247-182-21.in.ngrok.io/addfirstdata"
+                val url = "https://4de0-116-68-102-90.in.ngrok.io/addfirstdata"
                 val jsonObjectRequest = JsonObjectRequest(
                     Request.Method.POST, url, obj,
                     Response.Listener { response ->
@@ -118,7 +119,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-                    val url = "https://e4f8-117-247-182-21.in.ngrok.io/updatedataL"
+                    val url = "https://4de0-116-68-102-90.in.ngrok.io/updatedataL"
                     var currentLatLong = LatLng(location.latitude, location.longitude)
 
                     CoroutineScope(Dispatchers.Main).launch {
@@ -142,10 +143,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                         )
                         queue.add(jsonObjectRequest)
                         //marker.remove()
+
                         mMap.clear()
-
                         //delay(5000)
-
                         updateOtherVehicleLocation()
                         delay(3000)
 
@@ -155,28 +155,33 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 }
             }
     }
+
     private fun placeMarkerOnMap(currentLatLong: LatLng) {
+
+
         val markerOptions = MarkerOptions().position(currentLatLong);
         markerOptions.title("$currentLatLong")
-        markersArray.add(markerOptions)
-        markersArray.forEach{
-            mMap.addMarker(it)!!
-
+        mMap.addMarker(markerOptions)
+    }
+    private fun markLocations(jArray : JSONArray)
+    {
+        (0 until jArray.length()).forEach {
+            val res = jArray.getJSONObject(it)
+            placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double))
+            //locationArray.add(LatLng(res.get("latitude") as Double , res.get("longtitude") as Double))
+            //placeMarkerOnMap(LatLng(lat as Double, long as Double))
         }
+//        (0 until locationArray.size).forEach {
+//            placeMarkerOnMap(locationArray[it])
+//        }
     }
     private fun updateOtherVehicleLocation() {
-        val url = "https://e4f8-117-247-182-21.in.ngrok.io/read"
+        val url = "https://4de0-116-68-102-90.in.ngrok.io/read"
         val jsonArrayRequest = JsonArrayRequest(
             Request.Method.GET, url, null,
             Response.Listener { response ->
                 Log.d("read all data", response.toString());
-                (0 until response.length()).forEach {
-                    val res = response.getJSONObject(it)
-                    val lat = res.get("latitude")
-                    val long = res.get("longitude")
-                    placeMarkerOnMap(LatLng(lat as Double, long as Double))
-                  Log.d("LOCCATIONNNNNs", res.get("latitude").toString())
-                }
+                markLocations(response)
             },
             Response.ErrorListener { error ->
                 Log.d("error read all data", error.localizedMessage)
