@@ -6,4 +6,5 @@
     <string name="btConnect">Send to device</string>
     <string name="btRecieve">Receive</string>
     <string name="btDisconnect">Disconnect from device</string>
+    <string name="nodeJSBackend_IP"> PUT THE ID HEREEEEEEEEEEEEE      </string>
 </resources>
