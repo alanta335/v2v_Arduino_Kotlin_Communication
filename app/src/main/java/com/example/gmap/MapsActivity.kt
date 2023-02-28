@@ -37,6 +37,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var marker: Marker
     private lateinit var queue : RequestQueue
 
 
@@ -81,8 +82,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         fusedLocationClient.lastLocation.addOnSuccessListener(this){location ->
             if(location != null){
                 lastLocation = location
-                val currentLatLong = LatLng(location.latitude,location.longitude)
-                val ud = intent.getStringExtra("accountid").toString()
+                var currentLatLong = LatLng(location.latitude,location.longitude)
+                var ud = intent.getStringExtra("accountid").toString();
                 val obj = JSONObject()
                 obj.put("latitude",location.latitude)
                 obj.put("longitude",location.longitude)
@@ -90,11 +91,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 obj.put("accident",false)
                 obj.put("block",false)
                 obj.put("id",ud)
-                val url = resources.getString(R.string.nodeJSBackend_IP)
+                val url = "https://4de0-116-68-102-90.in.ngrok.io/addfirstdata"
                 val jsonObjectRequest = JsonObjectRequest(
                     Request.Method.POST, url, obj,
                     Response.Listener { response ->
-                        Log.d("response",response.toString())
+                        Log.d("response",response.toString());
                     },
                     Response.ErrorListener { error ->
                         Log.d("error",error.localizedMessage)
@@ -115,14 +116,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-                    val url = resources.getString(R.string.nodeJSBackend_IP)
+                    val url = "https://4de0-116-68-102-90.in.ngrok.io/updatedataL"
                     var currentLatLong = LatLng(location.latitude, location.longitude)
 
                     CoroutineScope(Dispatchers.Main).launch {
 
                     while (true) {
                         currentLatLong = LatLng(location.latitude, location.longitude)
-                        val ud = intent.getStringExtra("accountid").toString()
+                        var ud = intent.getStringExtra("accountid").toString();
                         val obj = JSONObject()
                         obj.put("latitude",location.latitude)
                         obj.put("longitude",location.longitude)
@@ -153,7 +154,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun placeMarkerOnMap(currentLatLong: LatLng) {
-        val markerOptions = MarkerOptions().position(currentLatLong)
+        val markerOptions = MarkerOptions().position(currentLatLong);
         markerOptions.title("$currentLatLong")
         mMap.addMarker(markerOptions)
     }
@@ -162,16 +163,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         (0 until jArray.length()).forEach {
             val res = jArray.getJSONObject(it)
             placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double))
-
+            //locationArray.add(LatLng(res.get("latitude") as Double , res.get("longtitude") as Double))
+            //placeMarkerOnMap(LatLng(lat as Double, long as Double))
         }
-
+//        (0 until locationArray.size).forEach {
+//            placeMarkerOnMap(locationArray[it])
+//        }
     }
     private fun updateOtherVehicleLocation() {
-        val url = resources.getString(R.string.nodeJSBackend_IP)
+        val url = "https://4de0-116-68-102-90.in.ngrok.io/read"
         val jsonArrayRequest = JsonArrayRequest(
             Request.Method.GET, url, null,
             Response.Listener { response ->
-                Log.d("read all data", response.toString())
+                Log.d("read all data", response.toString());
                 markLocations(response)
             },
             Response.ErrorListener { error ->
