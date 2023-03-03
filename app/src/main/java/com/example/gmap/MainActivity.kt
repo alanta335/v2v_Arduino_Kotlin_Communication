@@ -96,10 +96,10 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
         //UNCOMMENT THIS TO BYPASS SIGN IN LOL
-        else{
-            val intent = Intent(this,MapsActivity::class.java)
-            intent.putExtra("accountid","3452v8dsfgbTESTID")
-            startActivity(intent)
-        }
+//        else{
+//            val intent = Intent(this,MapsActivity::class.java)
+//            intent.putExtra("accountid","3452v8dsfgbTESTID")
+//            startActivity(intent)
+//        }
     }
 }
