@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.android.volley.Request
 import com.android.volley.RequestQueue
@@ -21,6 +22,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -39,6 +41,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var marker: Marker
     private lateinit var queue : RequestQueue
+    private var accident = false
+    private var block = false
+    private lateinit var faba: View
+    private lateinit var fabb: View
+
 
 
     companion object {
@@ -47,7 +54,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -56,6 +62,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+
     }
 
     /**
@@ -63,7 +70,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
      */
 
     override fun onMapReady(googleMap: GoogleMap) {
-
         mMap = googleMap
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.setOnMarkerClickListener(this)
@@ -77,6 +83,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     @SuppressLint("MissingPermission")
     private fun setUpMap() {
+
         queue = Volley.newRequestQueue(this)
         mMap.isMyLocationEnabled = true
         fusedLocationClient.lastLocation.addOnSuccessListener(this){location ->
@@ -88,10 +95,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 obj.put("latitude",location.latitude)
                 obj.put("longitude",location.longitude)
 
-                obj.put("accident",false)
-                obj.put("block",false)
+                obj.put("accident",accident)
+                obj.put("block",block)
                 obj.put("id",ud)
-                val url = "https://4de0-116-68-102-90.in.ngrok.io/addfirstdata"
+                val url = "https://a0db-117-247-182-17.in.ngrok.io/addfirstdata"
                 val jsonObjectRequest = JsonObjectRequest(
                     Request.Method.POST, url, obj,
                     Response.Listener { response ->
@@ -112,11 +119,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
     @SuppressLint("MissingPermission")
     private fun updateDataL(){
+        faba = findViewById(R.id.fabaccident)
+        faba.setOnClickListener {
+            accident = true
+            }
+        fabb = findViewById(R.id.fabblock)
+        fabb.setOnClickListener {
+                block = true
+        }
 
-            fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
+
+        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-                    val url = "https://4de0-116-68-102-90.in.ngrok.io/updatedataL"
+                    val url = "https://a0db-117-247-182-17.in.ngrok.io/updatedataL"
                     var currentLatLong = LatLng(location.latitude, location.longitude)
 
                     CoroutineScope(Dispatchers.Main).launch {
@@ -127,6 +143,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                         val obj = JSONObject()
                         obj.put("latitude",location.latitude)
                         obj.put("longitude",location.longitude)
+                        obj.put("accident",accident)
+                        obj.put("block",block)
                         obj.put("id", ud)
 
                         val jsonObjectRequest = JsonObjectRequest(
@@ -171,7 +189,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 //        }
     }
     private fun updateOtherVehicleLocation() {
-        val url = "https://4de0-116-68-102-90.in.ngrok.io/read"
+        val url = "https://a0db-117-247-182-17.in.ngrok.io/read"
         val jsonArrayRequest = JsonArrayRequest(
             Request.Method.GET, url, null,
             Response.Listener { response ->
