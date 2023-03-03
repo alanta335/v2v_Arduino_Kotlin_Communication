@@ -1,6 +1,5 @@
 package com.example.gmap
 
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -44,7 +43,7 @@ class MainActivity : AppCompatActivity() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
             .build()
-        val mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+        val mGoogleSignInClient = GoogleSignIn.getClient(this, gso)
         val account = GoogleSignIn.getLastSignedInAccount(this)
         val signinButton = findViewById<Button>(R.id.google_sign_in)
         val btButton = findViewById<Button>(R.id.main_bluetooth_dev).setOnClickListener(){
@@ -91,10 +90,16 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         val account = GoogleSignIn.getLastSignedInAccount(this)
         model.account.value = account
-    if(account != null) {
+        if(account != null) {
         val intent = Intent(this,MapsActivity::class.java)
         intent.putExtra("accountid",model.account.value?.id)
         startActivity(intent)
     }
+        //UNCOMMENT THIS TO BYPASS SIGN IN LOL
+        else{
+            val intent = Intent(this,MapsActivity::class.java)
+            intent.putExtra("accountid","3452v8dsfgbTESTID")
+            startActivity(intent)
+        }
     }
 }
