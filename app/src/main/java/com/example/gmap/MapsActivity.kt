@@ -101,7 +101,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                             updateOtherVehicleLocation()
                         }
                     }
-                delay(3000)
+                delay(1000)
 
             }
         }
@@ -126,6 +126,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 obj.put("accident",accident)
                 obj.put("block",block)
                 obj.put("id",ud)
+
                 volleyRequest.volleyPostRequest("/addfirstdata" , obj, listener)
                 placeMarkerOnMap(currentLatLong)
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 22f))
