@@ -73,12 +73,38 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
      * Manipulates the map once available.
      */
 
+    @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.setOnMarkerClickListener(this)
         setUpMap()
+        CoroutineScope(Dispatchers.Default).launch {
+            while (true) {
+                var updatePos = false
+                var currentPos : LatLng
+                fusedLocationClient.lastLocation
+                    .addOnSuccessListener { location : Location? ->
+                        if (location != null) {
+                            currentPos = LatLng(location.latitude, location.longitude)
+                            updatePos = true
+                            val ud = intent.getStringExtra("accountid").toString()
+                            val obj = JSONObject()
+                            obj.put("latitude", currentPos.latitude)
+                            obj.put("longitude",currentPos.longitude)
+                            obj.put("accident",accident)
+                            obj.put("block",block)
+                            obj.put("id", ud)
+                            volleyRequest.volleyPostRequest("/updatedataL", obj, listener)
+                            mMap.clear()
+                            //delay(5000)
+                            updateOtherVehicleLocation()
+                        }
+                    }
+                delay(3000)
 
+            }
+        }
         updateDataL()
 
 
@@ -87,7 +113,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     @SuppressLint("MissingPermission")
     private fun setUpMap() {
 
-        queue = Volley.newRequestQueue(this)
+       // queue = Volley.newRequestQueue(this)
         mMap.isMyLocationEnabled = true
         fusedLocationClient.lastLocation.addOnSuccessListener(this){location ->
             if(location != null){
@@ -123,26 +149,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-                    var currentLatLong = LatLng(location.latitude, location.longitude)
 
-                    CoroutineScope(Dispatchers.Main).launch {
 
-                    while (true) {
-                        currentLatLong = LatLng(location.latitude, location.longitude)
-                        val ud = intent.getStringExtra("accountid").toString()
-                        val obj = JSONObject()
-                        obj.put("latitude",location.latitude)
-                        obj.put("longitude",location.longitude)
-                        obj.put("accident",accident)
-                        obj.put("block",block)
-                        obj.put("id", ud)
-                        volleyRequest.volleyPostRequest("/updatedataL", obj, listener)
-                        mMap.clear()
-                        //delay(5000)
-                        updateOtherVehicleLocation()
-                        delay(3000)
-                    }
-                    }
                 }
             }
     }
