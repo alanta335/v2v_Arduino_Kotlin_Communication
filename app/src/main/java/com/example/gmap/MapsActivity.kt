@@ -5,6 +5,7 @@ import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.Volley
@@ -18,6 +19,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -27,7 +29,7 @@ import org.json.JSONObject
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     GoogleMap.OnMarkerClickListener {
-
+    private lateinit var crowdDetection : FloatingActionButton
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
@@ -50,6 +52,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             //Log.d("VolleyResponseListener", jsonArray.toString())
 
             if(url == "/read") markLocations(jsonArray)
+            if(url == "/cluster"){
+                val centroid  = jsonArray[0]
+                Log.d("Centroid function", centroid.toString())
+            }
         }
         override fun onFail(url: String, error : String) {
             Log.d("VolleyResponseListener Error", url + error)
@@ -67,6 +73,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         mapFragment.getMapAsync(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         volleyRequest = volleyRequestHandler(this)
+        fabb = findViewById(R.id.fabblock)
+        faba = findViewById(R.id.fabaccident)
+        faba.setOnClickListener {
+            accident = true
+        }
+        fabb.setOnClickListener {
+            block = true
+        }
+        crowdDetection = findViewById(R.id.check_block)
+        crowdDetection.setOnClickListener {
+            volleyRequest.volleyGetRequest("/cluster", null, listener)
+
+        }
     }
 
     /**
@@ -137,14 +156,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     }
     @SuppressLint("MissingPermission")
     private fun updateDataL(){
-        faba = findViewById(R.id.fabaccident)
-        faba.setOnClickListener {
-            accident = true
-            }
-        fabb = findViewById(R.id.fabblock)
-        fabb.setOnClickListener {
-                block = true
-        }
+
+
 
 
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->

@@ -27,6 +27,17 @@
         android:layout_gravity= "end|bottom"
         android:backgroundTint="#ffcc00"
         />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/check_block"
+        android:layout_alignParentBottom= "true"
+        android:layout_alignParentRight= "true"
+        android:layout_marginBottom= "350dp"
+        android:layout_marginRight="16dp"
+        android:layout_width= "wrap_content"
+        android:layout_height= "wrap_content"
+        android:layout_gravity= "end|bottom"
+        android:backgroundTint="#0000ff"
+        />
 
     <fragment
         android:id="@+id/map"
