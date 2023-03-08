@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.android.volley.RequestQueue
 import com.android.volley.toolbox.Volley
 import com.example.gmap.databinding.ActivityMapsBinding
@@ -16,9 +17,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +39,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     private lateinit var faba: View
     private lateinit var fabb: View
     private lateinit var volleyRequest : volleyRequestHandler
-
+    private var circle: Circle? = null
     var listener: VolleyResponseListener = object : VolleyResponseListener {
 
         override fun onSuccess(url: String, json: JSONObject) {
@@ -53,16 +52,40 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
 
             if(url == "/read") markLocations(jsonArray)
             if(url == "/cluster"){
-                val centroid  = jsonArray[0]
-                Log.d("Centroid function", centroid.toString())
+                (0 until jsonArray.length()).forEach {
+                    val jsonObj = jsonArray.getJSONObject(it)
+                    val centroidx = jsonObj.getDouble("centroidx")
+                    val centroidy = jsonObj.getDouble("centroidy")
+                    val radius = jsonObj.getDouble("radius")
+                    drawCircle(centroidx, centroidy, radius)
+                }
             }
         }
         override fun onFail(url: String, error : String) {
             Log.d("VolleyResponseListener Error", url + error)
         }
     }
+    private fun drawCircle(latitude: Double, longitude: Double, radius: Double) {
+        var rdx :Double? = null
+        if(!radius.equals(0)) {
+            rdx = radius * 100000
+        }
+        else rdx = 0.00;
 
-    override fun onCreate(savedInstanceState: Bundle?) {
+
+        Log.d("radius = ", rdx.toString())
+
+        val circleOptions = CircleOptions()
+            .center(LatLng(latitude, longitude))
+            .radius(rdx)
+            .strokeWidth(1.0f)
+            .strokeColor(ContextCompat.getColor(this, R.color.purple_500))
+            .fillColor(ContextCompat.getColor(this, R.color.teal_200))
+        //circle?.remove() // Remove old circle.
+        circle = mMap?.addCircle(circleOptions)
+
+    }
+        override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
