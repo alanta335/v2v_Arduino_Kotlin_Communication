@@ -5,11 +5,8 @@ import android.location.Location
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.android.volley.RequestQueue
-import com.android.volley.toolbox.Volley
 import com.example.gmap.databinding.ActivityMapsBinding
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -33,9 +30,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var queue: RequestQueue
     private var accident = false
     private var block = false
+    private var markerMap : HashMap<String , Marker> = HashMap()
     private lateinit var faba: View
     private lateinit var fabb: View
     private lateinit var volleyRequest : volleyRequestHandler
@@ -66,11 +63,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         }
     }
     private fun drawCircle(latitude: Double, longitude: Double, radius: Double) {
-        var rdx :Double? = null
-        if(!radius.equals(0)) {
+        val rdx :Double?
+        if(radius != 0.00) {
             rdx = radius * 100000
         }
-        else rdx = 0.00;
+        else rdx = 0.00
 
 
         Log.d("radius = ", rdx.toString())
@@ -81,8 +78,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             .strokeWidth(1.0f)
             .strokeColor(ContextCompat.getColor(this, R.color.purple_500))
             .fillColor(ContextCompat.getColor(this, R.color.teal_200))
-        //circle?.remove() // Remove old circle.
-        circle = mMap?.addCircle(circleOptions)
+        circle = mMap.addCircle(circleOptions)
 
     }
         override fun onCreate(savedInstanceState: Bundle?) {
@@ -138,7 +134,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                             obj.put("block",block)
                             obj.put("id", ud)
                             volleyRequest.volleyPostRequest("/updatedataL", obj, listener)
-                            mMap.clear()
+//                            mMap.clear()
                             //delay(5000)
                             updateOtherVehicleLocation()
                         }
@@ -170,7 +166,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 obj.put("id",ud)
 
                 volleyRequest.volleyPostRequest("/addfirstdata" , obj, listener)
-                placeMarkerOnMap(currentLatLong)
+                markerMap.put(intent.getStringExtra("accountid")!!,placeMarkerOnMap(currentLatLong))
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 22f))
 
             }
@@ -179,30 +175,28 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     }
     @SuppressLint("MissingPermission")
     private fun updateDataL(){
-
-
-
-
         fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
                 if (location != null) {
                     lastLocation = location
-
-
                 }
             }
     }
 
-    private fun placeMarkerOnMap(currentLatLong: LatLng) {
+    private fun placeMarkerOnMap(currentLatLong: LatLng) : Marker {
         val markerOptions = MarkerOptions().position(currentLatLong)
         markerOptions.title("$currentLatLong")
-        mMap.addMarker(markerOptions)
+        return mMap.addMarker(markerOptions)!!
     }
     private fun markLocations(jArray : JSONArray)
     {
         (0 until jArray.length()).forEach {
             val res = jArray.getJSONObject(it)
-            placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double))
-
+            val account = res.getString("id")
+            if(markerMap.containsKey(account))
+            {
+                markerMap.get(account)?.remove()
+            }
+            markerMap.put(account, placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double)))
         }
 
     }
