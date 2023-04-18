@@ -26,6 +26,9 @@ import org.json.JSONObject
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     GoogleMap.OnMarkerClickListener {
     private lateinit var crowdDetection : FloatingActionButton
+    private lateinit var accidentDetection : FloatingActionButton
+    private var crowdDetected = 0;
+    private var accidentDetected = 0;
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
@@ -36,7 +39,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     private lateinit var faba: View
     private lateinit var fabb: View
     private lateinit var volleyRequest : volleyRequestHandler
-    private var circle: Circle? = null
+    private var circle : ArrayList<Circle> = ArrayList()
     var listener: VolleyResponseListener = object : VolleyResponseListener {
 
         override fun onSuccess(url: String, json: JSONObject) {
@@ -65,7 +68,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     private fun drawCircle(latitude: Double, longitude: Double, radius: Double) {
         val rdx :Double?
         if(radius != 0.00) {
-            rdx = radius * 100000
+            rdx = radius * 130000
         }
         else rdx = 0.00
 
@@ -78,8 +81,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             .strokeWidth(1.0f)
             .strokeColor(ContextCompat.getColor(this, R.color.purple_500))
             .fillColor(ContextCompat.getColor(this, R.color.teal_200))
-        circle = mMap.addCircle(circleOptions)
+        val ncircle = mMap.addCircle(circleOptions)
+        circle.add(ncircle);
 
+    }
+    private fun clearCircle(){
+        circle.forEach {
+            it.remove()
+        }
     }
         override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,10 +110,27 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             block = true
         }
         crowdDetection = findViewById(R.id.check_block)
-        crowdDetection.setOnClickListener {
-            volleyRequest.volleyGetRequest("/cluster", null, listener)
+            accidentDetection = findViewById(R.id.fabaccident)
 
+        crowdDetection.setOnClickListener {
+            if (crowdDetected == 0){
+                volleyRequest.volleyGetRequest("/cluster", null, listener)
+                crowdDetected = 1
+            }else{
+                clearCircle()
+                crowdDetected = 0;
+
+            }
         }
+            accidentDetection.setOnClickListener {
+                if (accidentDetected == 0){
+                    accident = true
+                    accidentDetected = 1
+                }else{
+                    accident = false
+                    accidentDetected = 0;
+                }
+            }
     }
 
     /**
@@ -119,6 +145,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         setUpMap()
         CoroutineScope(Dispatchers.Default).launch {
             while (true) {
+
                 var updatePos = false
                 var currentPos : LatLng
                 fusedLocationClient.lastLocation
@@ -166,7 +193,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 obj.put("id",ud)
 
                 volleyRequest.volleyPostRequest("/addfirstdata" , obj, listener)
-                markerMap.put(intent.getStringExtra("accountid")!!,placeMarkerOnMap(currentLatLong))
+                markerMap.put(intent.getStringExtra("accountid")!!,placeMarkerOnMap(currentLatLong,ambulance = false,acc=false))
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 22f))
 
             }
@@ -182,8 +209,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             }
     }
 
-    private fun placeMarkerOnMap(currentLatLong: LatLng) : Marker {
+    private fun placeMarkerOnMap(currentLatLong: LatLng,ambulance:Boolean?,acc:Boolean?) : Marker {
         val markerOptions = MarkerOptions().position(currentLatLong)
+        if (ambulance == true){
+            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(
+                BitmapDescriptorFactory.HUE_CYAN
+            )).alpha(1f)
+        }
+
+        if (acc == true){
+            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(
+                BitmapDescriptorFactory.HUE_YELLOW
+            )).alpha(1f)
+        }
+
         markerOptions.title("$currentLatLong")
         return mMap.addMarker(markerOptions)!!
     }
@@ -196,7 +235,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             {
                 markerMap.get(account)?.remove()
             }
-            markerMap.put(account, placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double)))
+            markerMap.put(account, placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double),res.get("ambulance") as Boolean,res.get("accident") as Boolean))
         }
 
     }
