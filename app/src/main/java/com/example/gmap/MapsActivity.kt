@@ -27,8 +27,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     GoogleMap.OnMarkerClickListener {
     private lateinit var crowdDetection : FloatingActionButton
     private lateinit var accidentDetection : FloatingActionButton
+    private lateinit var nearbyDetection : FloatingActionButton
     private var crowdDetected = 0;
     private var accidentDetected = 0;
+    private var nearbyDetected = 0;
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
     private lateinit var lastLocation: Location
@@ -36,8 +38,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     private var accident = false
     private var block = false
     private var markerMap : HashMap<String , Marker> = HashMap()
+    private var nearbyMap: HashMap<String, Marker> = HashMap()
     private lateinit var faba: View
-    private lateinit var fabb: View
+
     private lateinit var volleyRequest : volleyRequestHandler
     private var circle : ArrayList<Circle> = ArrayList()
     var listener: VolleyResponseListener = object : VolleyResponseListener {
@@ -50,7 +53,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             Log.d("VolleyResponseListener", "got message from $url")
             //Log.d("VolleyResponseListener", jsonArray.toString())
 
-            if(url == "/read") markLocations(jsonArray)
+            if(url == "/read") markLocations(jsonArray, markerMap)
+            if(url == "/readNearby") markLocations(jsonArray, nearbyMap)
             if(url == "/cluster"){
                 (0 until jsonArray.length()).forEach {
                     val jsonObj = jsonArray.getJSONObject(it)
@@ -101,16 +105,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         mapFragment.getMapAsync(this)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         volleyRequest = volleyRequestHandler(this)
-        fabb = findViewById(R.id.fabblock)
         faba = findViewById(R.id.fabaccident)
         faba.setOnClickListener {
             accident = true
         }
-        fabb.setOnClickListener {
-            block = true
-        }
+
         crowdDetection = findViewById(R.id.check_block)
             accidentDetection = findViewById(R.id.fabaccident)
+            nearbyDetection = findViewById(R.id.nearby)
 
         crowdDetection.setOnClickListener {
             if (crowdDetected == 0){
@@ -129,6 +131,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 }else{
                     accident = false
                     accidentDetected = 0;
+                }
+            }
+
+            nearbyDetection.setOnClickListener {
+                if (nearbyDetected == 0){
+                    volleyRequest.volleyGetRequest("/readNearby", null  ,listener)
+                    nearbyDetected = 1
+                    Log.d("Nearby" , nearbyDetected.toString())
+                }
+                else{
+                    nearbyMap.forEach(){
+                            it.value.remove()
+                    }
+                    nearbyDetected = 0;
+                    Log.d("Nearby", nearbyDetected.toString())
                 }
             }
     }
@@ -193,7 +210,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 obj.put("id",ud)
 
                 volleyRequest.volleyPostRequest("/addfirstdata" , obj, listener)
-                markerMap.put(intent.getStringExtra("accountid")!!,placeMarkerOnMap(currentLatLong,ambulance = false,acc=false))
+                markerMap.put(intent.getStringExtra("accountid")!!,placeMarkerOnMap(currentLatLong,ambulance = false,acc=false,type = null))
                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLong, 22f))
 
             }
@@ -209,7 +226,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             }
     }
 
-    private fun placeMarkerOnMap(currentLatLong: LatLng,ambulance:Boolean?,acc:Boolean?) : Marker {
+    private fun placeMarkerOnMap(currentLatLong: LatLng,ambulance:Boolean?,acc:Boolean?, type: String?) : Marker {
         val markerOptions = MarkerOptions().position(currentLatLong)
         if (ambulance == true){
             markerOptions.icon(BitmapDescriptorFactory.defaultMarker(
@@ -222,20 +239,52 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 BitmapDescriptorFactory.HUE_YELLOW
             )).alpha(1f)
         }
+        if(type == "hospital")
+        {
+            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE
+            )).alpha(1f)
+        }
+        if(type == "police")
+        {
+            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET
+            )).alpha(1f)
+        }
+        if(type == "repairshop")
+        {
+            markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ROSE
+            )).alpha(1f)
+        }
+        if(type!=null) {
+            markerOptions.title(type)
+        }
+        else
+            markerOptions.title("$currentLatLong")
+        return  mMap.addMarker(markerOptions)!!
+        //Log.d("Marker" , marker.isVisible.toString())
 
-        markerOptions.title("$currentLatLong")
-        return mMap.addMarker(markerOptions)!!
     }
-    private fun markLocations(jArray : JSONArray)
+    private fun markLocations(jArray : JSONArray, map : HashMap<String, Marker>)
     {
         (0 until jArray.length()).forEach {
             val res = jArray.getJSONObject(it)
             val account = res.getString("id")
-            if(markerMap.containsKey(account))
+
+            if(map.containsKey(account))
             {
-                markerMap.get(account)?.remove()
+                map[account]?.remove()
             }
-            markerMap.put(account, placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double),res.get("ambulance") as Boolean,res.get("accident") as Boolean))
+            try {map[account] = placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double),
+                null,
+                null,
+                res.get("type") as String?)
+                //Log.d("RESULT FOR NEARBY", res.toString())
+            }
+            catch (e : Exception) {
+                 map[account] = placeMarkerOnMap(LatLng(res.get("latitude") as Double, res.get("longitude") as Double),
+                    res.get("ambulance") as Boolean?,
+                    res.get("accident") as Boolean?,
+                    null)
+            }
         }
 
     }

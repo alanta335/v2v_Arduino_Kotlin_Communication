@@ -6,5 +6,5 @@
     <string name="btConnect">Send to device</string>
     <string name="btRecieve">Receive</string>
     <string name="btDisconnect">Disconnect from device</string>
-    <string name="baseURL">https://2a37-116-68-98-240.ngrok-free.app</string>
+    <string name="baseURL">https://4151-116-68-105-14.ngrok-free.app</string>
 </resources>
