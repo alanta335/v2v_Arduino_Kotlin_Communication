@@ -2,42 +2,68 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/fabaccident"
+        android:layout_gravity="center"
+
+        android:paddingEnd="0dp"
+        android:layout_marginBottom="150dp"
         android:layout_alignParentBottom= "true"
         android:layout_alignParentRight= "true"
-        android:layout_marginBottom= "150dp"
+
         android:layout_marginRight="16dp"
-        android:layout_width= "wrap_content"
+        android:layout_width= "70dp"
         android:layout_height= "wrap_content"
-        android:layout_gravity= "end|bottom"
         android:backgroundTint="#ff0000"
-        />
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+
+        android:text="SOS"
+        android:textColor="@color/white"
+        app:iconTint="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/nearby"
+        android:layout_gravity="center"
+
+        android:paddingEnd="0dp"
+        android:layout_marginBottom="250dp"
         android:layout_alignParentBottom= "true"
         android:layout_alignParentRight= "true"
-        android:layout_marginBottom= "250dp"
+
         android:layout_marginRight="16dp"
-        android:layout_width= "wrap_content"
+        android:layout_width= "70dp"
         android:layout_height= "wrap_content"
-        android:layout_gravity= "end|bottom"
-        android:backgroundTint="#ffcc00"
-        />
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:backgroundTint="#8BC34A"
+        android:text="Point of Interest"
+        android:textColor="@color/white"
+        app:iconTint="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/check_block"
+        android:layout_gravity="center"
+        android:paddingEnd="0dp"
+        android:layout_marginBottom="350dp"
         android:layout_alignParentBottom= "true"
         android:layout_alignParentRight= "true"
-        android:layout_marginBottom= "350dp"
+
         android:layout_marginRight="16dp"
-        android:layout_width= "wrap_content"
+        android:layout_width= "70dp"
         android:layout_height= "wrap_content"
-        android:layout_gravity= "end|bottom"
-        android:backgroundTint="#0000ff"
-        />
+        android:backgroundTint="#03A9F4"
+
+        android:text="Check for Block"
+        android:textColor="@color/white"
+        app:iconTint="@color/white"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
+
 
     <fragment
         android:id="@+id/map"

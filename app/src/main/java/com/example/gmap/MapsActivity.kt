@@ -15,6 +15,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,9 +26,9 @@ import org.json.JSONObject
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     GoogleMap.OnMarkerClickListener {
-    private lateinit var crowdDetection : FloatingActionButton
-    private lateinit var accidentDetection : FloatingActionButton
-    private lateinit var nearbyDetection : FloatingActionButton
+    private lateinit var crowdDetection : ExtendedFloatingActionButton
+    private lateinit var accidentDetection : ExtendedFloatingActionButton
+    private lateinit var nearbyDetection : ExtendedFloatingActionButton
     private var crowdDetected = 0;
     private var accidentDetected = 0;
     private var nearbyDetected = 0;
