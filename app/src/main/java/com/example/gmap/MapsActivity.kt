@@ -1,6 +1,12 @@
 package com.example.gmap
 
+import BluetoothService
 import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothSocket
+import android.content.Context
 import android.location.Location
 import android.os.Bundle
 import android.util.Log
@@ -16,34 +22,40 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.OutputStream
+import java.sql.Timestamp
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     GoogleMap.OnMarkerClickListener {
     private lateinit var crowdDetection : ExtendedFloatingActionButton
     private lateinit var accidentDetection : ExtendedFloatingActionButton
     private lateinit var nearbyDetection : ExtendedFloatingActionButton
-    private var crowdDetected = 0;
-    private var accidentDetected = 0;
-    private var nearbyDetected = 0;
+    private var crowdDetected = 0
+    private var nearbyDetected = 0
     private lateinit var mMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
+    lateinit var btAdapter : BluetoothAdapter
+            //lateinit var bluetoothAdapter :BluetoothAdapter
+        lateinit var bluetoothManager :BluetoothManager
+    lateinit var btsocket : BluetoothSocket
     private lateinit var lastLocation: Location
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var accident = false
     private var block = false
+    private lateinit var connectThread : ConnectThread
     private var markerMap : HashMap<String , Marker> = HashMap()
     private var nearbyMap: HashMap<String, Marker> = HashMap()
     private lateinit var faba: View
-
+    private var x : Job? = null
     private lateinit var volleyRequest : volleyRequestHandler
     private var circle : ArrayList<Circle> = ArrayList()
+
     var listener: VolleyResponseListener = object : VolleyResponseListener {
 
         override fun onSuccess(url: String, json: JSONObject) {
@@ -70,6 +82,74 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             Log.d("VolleyResponseListener Error", url + error)
         }
     }
+    @SuppressLint("MissingPermission")
+    inner class ConnectThread(device : BluetoothDevice) : Thread() {
+        fun receive()
+        {
+            var startBytes: ByteArray = "<".toByteArray()
+            var untilBytes: ByteArray = ">".toByteArray()
+            var ser = BluetoothService
+            val buffer = ser.listenData(startBytes,untilBytes,btsocket.inputStream)
+            Log.d("BTRecieved: ", buffer.toString())
+        }
+        fun send(string: String)
+        {
+            if(btsocket!=null)
+            {
+
+                try {
+                    var outputStream: OutputStream = btsocket.outputStream
+                    outputStream.write(string.toByteArray())
+                    outputStream.flush()
+
+                }
+                catch (e:java.lang.Exception)
+                {
+                    Log.d("BTError","Socket error")
+                }
+            }
+        }
+
+        lateinit var socket : BluetoothSocket
+        private val serviceID : String = "00001101-0000-1000-8000-00805f9b34fb"
+        var dev :BluetoothDevice = device
+        init {
+            try {
+                socket = dev.createRfcommSocketToServiceRecord(UUID.fromString(serviceID))
+            }
+            catch (e:java.lang.Exception) {
+                Log.d("ERROR", "Creating socket error")
+            }
+            btsocket = socket
+        }
+        override fun  run() {
+            btAdapter.cancelDiscovery()
+            try {
+                socket.connect()
+                Log.d("BTConn", "Connected")
+            }
+            catch(e : Exception) {
+                socket.close()
+                Log.d("Exception", e.toString())
+                return
+            }
+            btsocket = socket
+//            run_continously()
+
+        }
+        public fun cancel()
+        {
+            try{
+                socket.close()
+
+            }
+            catch(e:java.lang.Exception)
+            {
+                Log.d("HEHEHEH", "Error")
+            }
+        }
+
+    }
     private fun drawCircle(latitude: Double, longitude: Double, radius: Double) {
         val rdx :Double?
         if(radius != 0.00) {
@@ -95,6 +175,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             it.remove()
         }
     }
+        @SuppressLint("MissingPermission")
         override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMapsBinding.inflate(layoutInflater)
@@ -110,7 +191,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         faba.setOnClickListener {
             accident = true
         }
-
+                    bluetoothManager = this.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        btAdapter = bluetoothManager.adapter
+            connectThread = ConnectThread(btAdapter.getRemoteDevice("00:22:04:00:71:36"))
+            connectThread.start()
+            Log.d("Connected the connect thread","");
         crowdDetection = findViewById(R.id.check_block)
             accidentDetection = findViewById(R.id.fabaccident)
             nearbyDetection = findViewById(R.id.nearby)
@@ -126,13 +211,45 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             }
         }
             accidentDetection.setOnClickListener {
-                if (accidentDetected == 0){
+                if(!accident)
+                {
                     accident = true
-                    accidentDetected = 1
-                }else{
-                    accident = false
-                    accidentDetected = 0;
+                    x = CoroutineScope(Dispatchers.IO).launch{
+                        while(!::connectThread.isInitialized) {}
+                        while(true) {
+
+                            yield()
+                            Log.d("Trying to send", "3")
+                            fusedLocationClient.lastLocation.addOnSuccessListener { loc: Location? ->
+                                if (loc != null) {
+                                    Log.d("latitude", loc.latitude.toString())
+                                    Log.d("Longitude ", loc.longitude.toString());
+                                    var obj = JSONObject()
+                                    obj.put("latitude",  loc.latitude.toString())
+                                    obj.put("longitude" , loc.longitude.toString())
+                                    obj.put("timestamp" , Timestamp(System.currentTimeMillis()).toString())
+                                    //  Log.d("timestamp", System.currentTimeMillis().toString())
+                                    obj.put("sos" , false)
+                                    obj.put("device-id" , "3a7esdfs")
+                                    Log.d("JSON Object" , obj.toString())
+                                    connectThread!!.send(("<$obj>"))
+                                    connectThread!!.receive()
+                                }
+                                else Log.d("Location Pinger", "Turn on Location")
+                            }
+                            Thread.sleep(3000)
+                        }
+
+                    }
                 }
+                else
+                {
+                    accident = false
+                    x?.cancel()
+                    //connectThread.stop()
+                   // x?.join()
+                }
+
             }
 
             nearbyDetection.setOnClickListener {
@@ -149,11 +266,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                     Log.d("Nearby", nearbyDetected.toString())
                 }
             }
+
     }
 
-    /**
-     * Manipulates the map once available.
-     */
 
     @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
