@@ -10,7 +10,7 @@ char receivedChars[numChars];
 char tempChars[numChars];
 char message[numChars] = {0};
 int statusCode = 0;
-SoftwareSerial hc05(10,11);
+SoftwareSerial hc05(5,6);
 boolean newData = false;
 static boolean sending = false;
 
