@@ -14,9 +14,9 @@ const byte numChars = 128;
 char recievedChars[numChars];
 char tempChars[numChars];
 int statusCode = 0;
-
+int cow=0;
 SoftwareSerial hc05(3,6);
-
+int got=0;
 boolean newData = false;
 static boolean sending = false;
 static boolean recieving = false;
@@ -93,7 +93,6 @@ void parseData() {      // split the data into its parts
     for(int i = 0; i< 31; i++)
     {
       p1[i] = recievedChars[i];
-      Serial.println(p1[i]);
       p2[i+1] = recievedChars[i+31];
     }
     p1[32]='\0';
@@ -149,10 +148,13 @@ void recieveFromOther(){
 
       if ( myRadio.available()) 
       {
-
+        if(cow==0 || res1[0]!='{')
+        {
         myRadio.read(&res1, sizeof(res1));
         Serial.println(res1);
-        if(res1[0]=='{')
+        cow=cow+1;
+        }
+        if(res1[0]=='{' && got==0)
         {
           myRadio.read(&res2, sizeof(res2));
           Serial.println(res2);
@@ -161,10 +163,8 @@ void recieveFromOther(){
               strcat(res1, res2+1);
               Serial.print("res:");
               Serial.println(res1);
-        
-              DynamicJsonDocument dev1(512);
-              deserializeJson(dev1,res1);
-              sendJsonViaBT(dev1 ,Serial, hc05);
+              got=1;
+              
             }
             else return;
         }
@@ -187,4 +187,12 @@ void loop() {
 
   broadcast();
   recieveFromOther();
+  if(got==1){
+    Serial.print("got");
+    Serial.println(res1);
+    DynamicJsonDocument dev1(512);
+    deserializeJson(dev1,res1);
+    sendJsonViaBT(dev1 ,Serial, hc05);
+    got=0;
+  }
 }

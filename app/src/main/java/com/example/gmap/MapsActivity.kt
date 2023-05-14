@@ -53,6 +53,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
     private var nearbyMap: HashMap<String, Marker> = HashMap()
     private lateinit var faba: View
     private var x : Job? = null
+    private var k : Job? = null
     private lateinit var volleyRequest : volleyRequestHandler
     private var circle : ArrayList<Circle> = ArrayList()
 
@@ -91,6 +92,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             var ser = BluetoothService
             val buffer = ser.listenData(startBytes,untilBytes,btsocket.inputStream)
             Log.d("BTRecieved: ", buffer.toString())
+            val answ = String(buffer);
+            Log.d("BTRecieved answ: ", answ);
         }
         fun send(string: String)
         {
@@ -274,6 +277,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.setOnMarkerClickListener(this)
         setUpMap()
+
+            k = CoroutineScope(Dispatchers.IO).launch{
+                while(!::connectThread.isInitialized) {}
+                while(true) {
+                    yield()
+                    Log.d("Trying to resive", "3")
+                            connectThread!!.receive()
+                    Thread.sleep(3000)
+                }
+
+            }
+
+
         CoroutineScope(Dispatchers.Default).launch {
             while (true) {
 
