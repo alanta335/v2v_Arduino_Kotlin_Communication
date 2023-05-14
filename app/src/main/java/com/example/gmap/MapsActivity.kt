@@ -95,6 +95,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             if(!buffer.isEmpty()) {
                 val answ = String(buffer);
                 Log.d("BTRecieved answ: ", answ);
+                volleyRequest.volleyPostRequest("/updateaccofother", JSONObject(answ), listener)
             }
 
         }
