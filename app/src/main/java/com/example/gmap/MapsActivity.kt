@@ -233,8 +233,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                                     var obj = JSONObject()
                                     obj.put("lat",  loc.latitude.toString())
                                     obj.put("long" , loc.longitude.toString())
-                                    //  Log.d("timestamp", System.currentTimeMillis().toString())
-                                    obj.put("did" , "3a7esdfs")
+                                    val pid = intent.getStringExtra("accountid").toString()
+                                    obj.put("did" , pid.substring(14,21))
                                     Log.d("JSON Object" , obj.toString())
                                     connectThread!!.send(("<$obj>"))
 
