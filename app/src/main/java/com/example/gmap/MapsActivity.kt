@@ -193,7 +193,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
         }
                     bluetoothManager = this.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         btAdapter = bluetoothManager.adapter
-            connectThread = ConnectThread(btAdapter.getRemoteDevice("00:22:04:00:71:36"))
+            connectThread = ConnectThread(btAdapter.getRemoteDevice("00:22:04:00:70:D0"))
             connectThread.start()
             Log.d("Connected the connect thread","");
         crowdDetection = findViewById(R.id.check_block)
@@ -225,11 +225,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                                     Log.d("latitude", loc.latitude.toString())
                                     Log.d("Longitude ", loc.longitude.toString());
                                     var obj = JSONObject()
-                                    obj.put("latitude",  loc.latitude.toString())
-                                    obj.put("longitude" , loc.longitude.toString())
-                                    obj.put("timestamp" , Timestamp(System.currentTimeMillis()).toString())
+                                    obj.put("lat",  loc.latitude.toString())
+                                    obj.put("long" , loc.longitude.toString())
                                     //  Log.d("timestamp", System.currentTimeMillis().toString())
-                                    obj.put("sos" , false)
                                     obj.put("device-id" , "3a7esdfs")
                                     Log.d("JSON Object" , obj.toString())
                                     connectThread!!.send(("<$obj>"))

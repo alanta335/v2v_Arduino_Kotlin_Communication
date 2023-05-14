@@ -9,23 +9,28 @@
 int input;
 RF24 myRadio (7, 8); 
 byte addresses[][6] = {"012345"}; 
-
+char sosDev[216];
 const byte numChars = 128;
 char recievedChars[numChars];
 char tempChars[numChars];
 int statusCode = 0;
-SoftwareSerial hc05(5,6);
+
+SoftwareSerial hc05(3,6);
+
 boolean newData = false;
 static boolean sending = false;
 static boolean recieving = false;
-
 struct sosDevices{
   double lat;
   double longi;
   char deviceID[32]; 
 };
-struct sosDevices sos[10] , selfDevice;
+struct sosDevices sos[2] , selfDevice;
+char res1[64];
+char res2[32];
 
+char res3[64];
+char p1[32], p2[32];
 int no_of_devices = 0;
 bool selfSOS = false;
 void setup() {
@@ -38,9 +43,6 @@ void setup() {
   myRadio.setChannel(115); 
   myRadio.setPALevel(RF24_PA_MAX);
   myRadio.setDataRate( RF24_250KBPS ) ; 
-  myRadio.openWritingPipe( addresses[0]);
-  myRadio.openReadingPipe(1, addresses[0]);
-  myRadio.startListening();
 }
 
 void recieveAsBytes()
@@ -86,17 +88,18 @@ void recieveAsBytes()
 void parseData() {      // split the data into its parts
     DynamicJsonDocument device(512);
     // Serial.println(recievedChars);
+    //strcpy(sosDev, recievedChars);
+    for(int i = 0; i< 32; i++)
+    {
+      p1[i] = recievedChars[i];
+      p2[i] = recievedChars[i+32];
+    }
     deserializeJson(device, recievedChars);
     char devID[21];
     strcpy(devID , device["device-id"]);
-    // if(!findDeviceInSOS(devID))
-    // {
-    //   addDevicesToSOS(device);
-    //   Serial.print("No of devices: "); Serial.println(no_of_devices);
-    // }
-    selfDevice.lat = json["latitude"];
-    selfDevice.longi = json["longitude"];
-    strcpy(selfDevice.deviceID ,  json["device-id"]);
+    selfDevice.lat = device["lat"];
+    selfDevice.longi = device["long"];
+    strcpy(selfDevice.deviceID ,  device["device-id"]);
     selfSOS = true;
     if(sendJsonViaBT(device, Serial, hc05))
       Serial.println("Sent the JSON");
@@ -115,30 +118,46 @@ bool findDeviceInSOS(char *deviceID)
 }
 
 void addDevicesToSOS(DynamicJsonDocument &json){
-  sos[no_of_devices].lat = json["latitude"];
-    sos[no_of_devices].longi = json["longitude"];
+  sos[no_of_devices].lat = json["lat"];
+    sos[no_of_devices].longi = json["long"];
     strcpy(sos[no_of_devices].deviceID ,  json["device-id"]);
     no_of_devices++;
 }
 void broadcast()
 {
+  myRadio.openWritingPipe(addresses[0]);
   if(selfSOS) {
-    myRadio.write(&selfDevice, sizeof(selfDevice)); 
-    Serial.print("\nPackage:",selfDevice.deviceID);
+    myRadio.write(&p1, sizeof(p1)); 
+    Serial.println("\nWrote Part 1");
+    myRadio.write(&p2, sizeof(p2));
+    Serial.println("Wrote part 2");
+    //Serial.print(x);
   }
-  else return;
-    
+  myRadio.stopListening();
 }
 
 void recieveFromOther(){
-  if ( myRadio.available()) 
-  {
-    for(int o=0;o<25;o++)
-    {
-      myRadio.read(&data, sizeof(data) );
-    }
-    Serial.println(data.);
-  }
+  myRadio.openReadingPipe(1, addresses[0]);
+  myRadio.startListening();
+  Serial.print(myRadio.available());
+
+      if ( myRadio.available()) 
+      {
+
+        myRadio.read(&res1, sizeof(res1));
+        myRadio.read(&res2, sizeof(res2));
+        if(res2[0]!='{')
+          strcat(res1, res2);
+        else return;
+        Serial.println("res:");
+        Serial.println(res1);
+        DynamicJsonDocument dev1(512);
+        deserializeJson(dev1,res1);
+        sendJsonViaBT(dev1 ,Serial, hc05);
+      }
+      
+    
+  myRadio.stopListening();
 }
 
 void loop() {
@@ -147,8 +166,9 @@ void loop() {
     strcpy(tempChars, recievedChars);
     //send();
     parseData();
-    broadcast();
     newData = false;
   }
+
+  broadcast();
   recieveFromOther();
 }
