@@ -194,5 +194,6 @@ void loop() {
     deserializeJson(dev1,res1);
     sendJsonViaBT(dev1 ,Serial, hc05);
     got=0;
+    delay(3000);
   }
 }

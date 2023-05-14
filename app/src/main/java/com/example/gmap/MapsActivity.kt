@@ -92,8 +92,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
             var ser = BluetoothService
             val buffer = ser.listenData(startBytes,untilBytes,btsocket.inputStream)
             Log.d("BTRecieved: ", buffer.toString())
-            val answ = String(buffer);
-            Log.d("BTRecieved answ: ", answ);
+            if(!buffer.isEmpty()) {
+                val answ = String(buffer);
+                Log.d("BTRecieved answ: ", answ);
+            }
+
         }
         fun send(string: String)
         {
@@ -234,7 +237,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                                     obj.put("did" , "3a7esdfs")
                                     Log.d("JSON Object" , obj.toString())
                                     connectThread!!.send(("<$obj>"))
-                                    connectThread!!.receive()
+
                                 }
                                 else Log.d("Location Pinger", "Turn on Location")
                             }
@@ -283,7 +286,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback ,
                 while(true) {
                     yield()
                     Log.d("Trying to resive", "3")
-                            connectThread!!.receive()
+                    if (connectThread.socket.isConnected)
+                    {
+                        connectThread.receive()
+                    }
                     Thread.sleep(3000)
                 }
 

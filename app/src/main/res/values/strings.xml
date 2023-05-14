@@ -7,5 +7,5 @@
     <string name="btRecieve">Receive</string>
     <string name="btDisconnect">Disconnect from device</string>
     <string name="fab_label_red">SOS</string>
-    <string name="baseURL">https://17fa-42-104-149-18.ngrok-free.app</string>
+    <string name="baseURL">https://c2be-111-92-116-230.ngrok-free.app</string>
 </resources>
