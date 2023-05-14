@@ -87,19 +87,22 @@ void recieveAsBytes()
 }
 void parseData() {      // split the data into its parts
     DynamicJsonDocument device(512);
+    p2[0] = '~';
     // Serial.println(recievedChars);
     //strcpy(sosDev, recievedChars);
-    for(int i = 0; i< 32; i++)
+    for(int i = 0; i< 31; i++)
     {
       p1[i] = recievedChars[i];
-      p2[i] = recievedChars[i+32];
+      Serial.println(p1[i]);
+      p2[i+1] = recievedChars[i+31];
     }
+    p1[32]='\0';
     deserializeJson(device, recievedChars);
     char devID[21];
-    strcpy(devID , device["device-id"]);
+    strcpy(devID , device["did"]);
     selfDevice.lat = device["lat"];
     selfDevice.longi = device["long"];
-    strcpy(selfDevice.deviceID ,  device["device-id"]);
+    strcpy(selfDevice.deviceID ,  device["did"]);
     selfSOS = true;
     if(sendJsonViaBT(device, Serial, hc05))
       Serial.println("Sent the JSON");
@@ -120,7 +123,7 @@ bool findDeviceInSOS(char *deviceID)
 void addDevicesToSOS(DynamicJsonDocument &json){
   sos[no_of_devices].lat = json["lat"];
     sos[no_of_devices].longi = json["long"];
-    strcpy(sos[no_of_devices].deviceID ,  json["device-id"]);
+    strcpy(sos[no_of_devices].deviceID ,  json["did"]);
     no_of_devices++;
 }
 void broadcast()
@@ -128,15 +131,18 @@ void broadcast()
   myRadio.openWritingPipe(addresses[0]);
   if(selfSOS) {
     myRadio.write(&p1, sizeof(p1)); 
-    Serial.println("\nWrote Part 1");
+    Serial.print("\nWrote Part 1");
+    Serial.println(p1);
     myRadio.write(&p2, sizeof(p2));
-    Serial.println("Wrote part 2");
+    Serial.print("Wrote part 2");
+    Serial.println(p2);
     //Serial.print(x);
   }
   myRadio.stopListening();
 }
 
 void recieveFromOther(){
+
   myRadio.openReadingPipe(1, addresses[0]);
   myRadio.startListening();
   Serial.print(myRadio.available());
@@ -145,15 +151,25 @@ void recieveFromOther(){
       {
 
         myRadio.read(&res1, sizeof(res1));
-        myRadio.read(&res2, sizeof(res2));
-        if(res2[0]!='{')
-          strcat(res1, res2);
-        else return;
-        Serial.println("res:");
         Serial.println(res1);
-        DynamicJsonDocument dev1(512);
-        deserializeJson(dev1,res1);
-        sendJsonViaBT(dev1 ,Serial, hc05);
+        if(res1[0]=='{')
+        {
+          myRadio.read(&res2, sizeof(res2));
+          Serial.println(res2);
+          if(res2[0]=='~')
+            {
+              strcat(res1, res2+1);
+              Serial.print("res:");
+              Serial.println(res1);
+        
+              DynamicJsonDocument dev1(512);
+              deserializeJson(dev1,res1);
+              sendJsonViaBT(dev1 ,Serial, hc05);
+            }
+            else return;
+        }
+        else return;
+        
       }
       
     
