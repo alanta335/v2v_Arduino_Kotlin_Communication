@@ -129,11 +129,14 @@ void broadcast()
 {
   myRadio.openWritingPipe(addresses[0]);
   if(selfSOS) {
+
     myRadio.write(&p1, sizeof(p1)); 
     Serial.print("\nWrote Part 1");
+
     Serial.println(p1);
     myRadio.write(&p2, sizeof(p2));
     Serial.print("Wrote part 2");
+    
     Serial.println(p2);
     //Serial.print(x);
   }
@@ -194,6 +197,6 @@ void loop() {
     deserializeJson(dev1,res1);
     sendJsonViaBT(dev1 ,Serial, hc05);
     got=0;
-    delay(3000);
+    
   }
 }
